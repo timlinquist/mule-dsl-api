@@ -15,7 +15,7 @@
     <description>Module with the API to define how to build runtime objects from configuration files</description>
 
     <properties>
-        <formatterConfigPath>../../formatter.xml</formatterConfigPath>
+        <formatterConfigPath>formatter.xml</formatterConfigPath>
         <oldMuleArtifactVersion>1.0.0</oldMuleArtifactVersion>
     </properties>
 
