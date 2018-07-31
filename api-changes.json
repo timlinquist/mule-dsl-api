@@ -109,5 +109,20 @@
         }
       ]
     }
+  },
+  "1.1.4": {
+    "revapi": {
+      "ignore": [
+        {
+          "code": "java.method.added",
+          "new": "method org.mule.runtime.dsl.api.component.AttributeDefinition.Builder org.mule.runtime.dsl.api.component.AttributeDefinition.Builder::fromSimpleReferenceParameter(java.lang.String, org.mule.runtime.dsl.api.component.TypeConverter)",
+          "package": "org.mule.runtime.dsl.api.component",
+          "classSimpleName": "Builder",
+          "methodName": "fromSimpleReferenceParameter",
+          "elementKind": "method",
+          "justification": "MULE-15441"
+        }
+      ]
+    }
   }
 }
