@@ -21,9 +21,11 @@ import org.mule.runtime.api.component.location.LocationPart;
 
 import com.google.common.collect.ImmutableList;
 
+import java.io.ObjectInputStream;
 import java.io.Serializable;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -61,6 +63,8 @@ public class DefaultComponentLocation implements ComponentLocation, Serializable
   private LinkedList<DefaultLocationPart> parts;
   private volatile String location;
 
+  private transient TypedComponentIdentifier componentIdentifier;
+
   /**
    * Creates a virtual {@link ComponentLocation} for a single element, using the core namespace and using UNKNOWN as type. Only
    * meant for situations where a real location cannot be obtained.
@@ -87,6 +91,7 @@ public class DefaultComponentLocation implements ComponentLocation, Serializable
   public DefaultComponentLocation(Optional<String> name, List<DefaultLocationPart> parts) {
     this.name = name.orElse(null);
     this.parts = new LinkedList<>(parts);
+    componentIdentifier = calculateComponentIdentifier(parts);
   }
 
   /**
@@ -106,7 +111,10 @@ public class DefaultComponentLocation implements ComponentLocation, Serializable
 
   @Override
   public TypedComponentIdentifier getComponentIdentifier() {
-    return parts.get(parts.size() - 1).getPartIdentifier().get();
+    if (componentIdentifier == null) {
+      throw new NoSuchElementException();
+    }
+    return componentIdentifier;
   }
 
   /**
@@ -283,6 +291,15 @@ public class DefaultComponentLocation implements ComponentLocation, Serializable
           ", lineInFile=" + lineInFile +
           '}';
     }
+  }
+
+  private void readObject(ObjectInputStream in) throws Exception {
+    in.defaultReadObject();
+    this.componentIdentifier = calculateComponentIdentifier(this.parts);
+  }
+
+  private TypedComponentIdentifier calculateComponentIdentifier(List<DefaultLocationPart> parts) {
+    return parts.isEmpty() ? null : parts.get(parts.size() - 1).getPartIdentifier().orElse(null);
   }
 
   @Override
