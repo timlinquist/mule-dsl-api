@@ -7,10 +7,9 @@
 package org.mule.runtime.dsl.api.xml.parser;
 
 import static org.mule.runtime.api.util.Preconditions.checkState;
+
 import org.mule.api.annotation.NoExtend;
 import org.mule.api.annotation.NoInstantiate;
-
-import com.google.common.collect.ImmutableMap;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -18,7 +17,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-import org.w3c.dom.Node;
+import com.google.common.collect.ImmutableMap;
 
 /**
  * A configuration line represents the data within a line in a configuration file
@@ -34,9 +33,13 @@ public final class ConfigLine {
    */
   private ConfigLineProvider parent;
   /**
-   * Namespace which defines the config line definition
+   * Prefix of the namespace which defines the config line definition
    */
   private String namespace;
+  /**
+   * Uri of the namespace which defines the config line definition
+   */
+  private String namespaceUri;
   /**
    * Identifier of the configuration entry
    */
@@ -45,25 +48,23 @@ public final class ConfigLine {
   /**
    * The identifier attributes defined in the configuration
    */
-  private Map<String, SimpleConfigAttribute> configAttributes = new HashMap<>();
+  private final Map<String, SimpleConfigAttribute> configAttributes = new HashMap<>();
 
   /**
    * Generic set of attributes to be used for custom configuration file formats attributes
    */
-  private Map<String, Object> customAttributes = new HashMap<>();
+  private final Map<String, Object> customAttributes = new HashMap<>();
 
   /**
    * Config lines embedded inside this config line
    */
-  private List<ConfigLine> childrenConfigLines = new LinkedList<>();
+  private final List<ConfigLine> childrenConfigLines = new LinkedList<>();
 
   /**
    * Line number within the config file in which this config was defined.
    */
   private int lineNumber;
 
-  // TODO MULE-9638 remove once we don't need the old parsing mechanism anymore.
-  private Node node;
   private String textContent;
   private int startColumn;
   private String sourceCode;
@@ -72,6 +73,10 @@ public final class ConfigLine {
 
   public String getNamespace() {
     return namespace;
+  }
+
+  public String getNamespaceUri() {
+    return namespaceUri;
   }
 
   public String getIdentifier() {
@@ -92,10 +97,6 @@ public final class ConfigLine {
 
   public ConfigLine getParent() {
     return parent.getConfigLine();
-  }
-
-  public Node getNode() {
-    return node;
   }
 
   public String getTextContent() {
@@ -129,9 +130,9 @@ public final class ConfigLine {
       return false;
     if (identifier != null ? !identifier.equals(that.identifier) : that.identifier != null)
       return false;
-    if (configAttributes != null ? !configAttributes.equals(that.configAttributes) : that.configAttributes != null)
+    if (!configAttributes.equals(that.configAttributes))
       return false;
-    return childrenConfigLines != null ? childrenConfigLines.equals(that.childrenConfigLines) : that.childrenConfigLines == null;
+    return childrenConfigLines.equals(that.childrenConfigLines);
 
   }
 
@@ -140,8 +141,8 @@ public final class ConfigLine {
     int result = parent != null ? parent.hashCode() : 0;
     result = 31 * result + (namespace != null ? namespace.hashCode() : 0);
     result = 31 * result + (identifier != null ? identifier.hashCode() : 0);
-    result = 31 * result + (configAttributes != null ? configAttributes.hashCode() : 0);
-    result = 31 * result + (childrenConfigLines != null ? childrenConfigLines.hashCode() : 0);
+    result = 31 * result + (configAttributes.hashCode());
+    result = 31 * result + (childrenConfigLines.hashCode());
     return result;
   }
 
@@ -150,12 +151,18 @@ public final class ConfigLine {
 
     public static final String BUILDER_ALREADY_BUILD_AN_OBJECT_YOU_CANNOT_MODIFY_IT =
         "builder already build an object, you cannot modify it";
-    private ConfigLine configLine = new ConfigLine();
+    private final ConfigLine configLine = new ConfigLine();
     private boolean alreadyBuild;
 
     public Builder setNamespace(String namespace) {
       checkState(!alreadyBuild, BUILDER_ALREADY_BUILD_AN_OBJECT_YOU_CANNOT_MODIFY_IT);
       configLine.namespace = namespace;
+      return this;
+    }
+
+    public Builder setNamespaceUri(String namespaceUri) {
+      checkState(!alreadyBuild, BUILDER_ALREADY_BUILD_AN_OBJECT_YOU_CANNOT_MODIFY_IT);
+      configLine.namespaceUri = namespaceUri;
       return this;
     }
 
@@ -198,11 +205,6 @@ public final class ConfigLine {
     public Builder setParent(ConfigLineProvider parent) {
       checkState(!alreadyBuild, BUILDER_ALREADY_BUILD_AN_OBJECT_YOU_CANNOT_MODIFY_IT);
       configLine.parent = parent;
-      return this;
-    }
-
-    public Builder setNode(Node node) {
-      configLine.node = node;
       return this;
     }
 
