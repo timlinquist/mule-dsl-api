@@ -18,7 +18,6 @@ import org.mule.runtime.api.exception.MuleRuntimeException;
 import org.mule.runtime.dsl.api.xml.XmlNamespaceInfo;
 import org.mule.runtime.dsl.api.xml.XmlNamespaceInfoProvider;
 import org.mule.runtime.dsl.api.xml.parser.ConfigLine;
-import org.mule.runtime.dsl.api.xml.parser.ConfigLineProvider;
 
 import java.util.HashMap;
 import java.util.List;
@@ -98,10 +97,10 @@ public final class XmlApplicationParser {
   }
 
   public Optional<ConfigLine> parse(Element configElement) {
-    return configLineFromElement(configElement, () -> null);
+    return configLineFromElement(configElement);
   }
 
-  private Optional<ConfigLine> configLineFromElement(Node node, ConfigLineProvider parentProvider) {
+  private Optional<ConfigLine> configLineFromElement(Node node) {
     if (!isValidType(node)) {
       return Optional.empty();
     }
@@ -113,8 +112,7 @@ public final class XmlApplicationParser {
     ConfigLine.Builder builder = new ConfigLine.Builder()
         .setIdentifier(identifier)
         .setNamespace(namespace)
-        .setNamespaceUri(namespaceUri)
-        .setParent(parentProvider);
+        .setNamespaceUri(namespaceUri);
 
     XmlMetadataAnnotations userData = (XmlMetadataAnnotations) node.getUserData(XmlMetadataAnnotations.METADATA_ANNOTATIONS_KEY);
     int lineNumber = userData.getLineNumber();
@@ -144,7 +142,7 @@ public final class XmlApplicationParser {
             break;
           }
         } else {
-          configLineFromElement(child, builder::build).ifPresent(builder::addChild);
+          configLineFromElement(child).ifPresent(builder::addChild);
         }
       }
     }
