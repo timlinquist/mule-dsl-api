@@ -6,11 +6,14 @@
  */
 package org.mule.runtime.dsl.internal.xml.parser;
 
+import static com.sun.org.apache.xerces.internal.impl.xs.XMLSchemaValidator.XMLGRAMMAR_POOL;
 import static java.lang.System.lineSeparator;
 import static java.lang.Thread.currentThread;
 import static org.apache.commons.lang3.StringUtils.isEmpty;
 import static org.mule.runtime.dsl.internal.xml.parser.XmlMetadataAnnotations.METADATA_ANNOTATIONS_KEY;
+import static org.mule.runtime.internal.util.xmlsecurity.DefaultXMLSecureFactories.DOCUMENT_BUILDER_FACTORY;
 
+import com.sun.org.apache.xerces.internal.xni.grammars.XMLGrammarPool;
 import org.mule.runtime.dsl.internal.SourcePosition;
 
 import java.io.ByteArrayInputStream;
@@ -69,7 +72,7 @@ final public class MuleDocumentLoader {
    */
   public Document loadDocument(Supplier<SAXParserFactory> saxParserFactorySupplier, InputSource inputSource,
                                EntityResolver entityResolver, ErrorHandler errorHandler,
-                               int validationMode, boolean namespaceAware)
+                               int validationMode, boolean namespaceAware, XMLGrammarPool xmlGrammarPool)
       throws Exception {
     final Thread thread = currentThread();
     final ClassLoader currentClassLoader = thread.getContextClassLoader();
@@ -84,7 +87,7 @@ final public class MuleDocumentLoader {
       InputSource defaultInputSource = new InputSource(new ByteArrayInputStream(output.toByteArray()));
       InputSource enrichInputSource = new InputSource(new ByteArrayInputStream(output.toByteArray()));
 
-      DocumentBuilderFactory factory = this.createDocumentBuilderFactory(validationMode, namespaceAware);
+      DocumentBuilderFactory factory = this.createDocumentBuilderFactory(validationMode, namespaceAware, xmlGrammarPool);
       DocumentBuilder builder = this.createDocumentBuilder(factory, entityResolver, errorHandler);
       Document doc = builder.parse(defaultInputSource);
       createSaxAnnotator(saxParserFactorySupplier, doc).parse(enrichInputSource);
@@ -104,9 +107,15 @@ final public class MuleDocumentLoader {
     return documentReader;
   }
 
-  protected DocumentBuilderFactory createDocumentBuilderFactory(int validationMode, boolean namespaceAware)
+  protected DocumentBuilderFactory createDocumentBuilderFactory(int validationMode, boolean namespaceAware,
+                                                                XMLGrammarPool grammarPool)
       throws ParserConfigurationException {
-    DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+    DocumentBuilderFactory factory;
+    // Sure we are using standard Java implementations
+    factory = DocumentBuilderFactory.newInstance(DOCUMENT_BUILDER_FACTORY, MuleDocumentLoader.class.getClassLoader());
+    if (grammarPool != null) {
+      factory.setAttribute(XMLGRAMMAR_POOL, grammarPool);
+    }
     factory.setNamespaceAware(namespaceAware);
     if (validationMode != 0) {
       factory.setValidating(true);
@@ -124,7 +133,6 @@ final public class MuleDocumentLoader {
         }
       }
     }
-
     return factory;
   }
 
