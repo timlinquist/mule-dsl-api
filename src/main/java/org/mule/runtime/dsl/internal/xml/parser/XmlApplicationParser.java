@@ -7,21 +7,12 @@
 
 package org.mule.runtime.dsl.internal.xml.parser;
 
-import static org.mule.runtime.internal.dsl.DslConstants.CORE_NAMESPACE;
-import static org.mule.runtime.internal.dsl.DslConstants.CORE_PREFIX;
-import static org.mule.runtime.internal.dsl.DslConstants.DOMAIN_NAMESPACE;
-import static org.mule.runtime.internal.dsl.DslConstants.DOMAIN_PREFIX;
-import static org.mule.runtime.internal.dsl.DslConstants.EE_DOMAIN_NAMESPACE;
-import static org.mule.runtime.internal.dsl.DslConstants.EE_DOMAIN_PREFIX;
+import static java.util.Optional.empty;
 
-import org.mule.runtime.api.exception.MuleRuntimeException;
-import org.mule.runtime.dsl.api.xml.XmlNamespaceInfo;
 import org.mule.runtime.dsl.api.xml.XmlNamespaceInfoProvider;
 import org.mule.runtime.dsl.api.xml.parser.ConfigLine;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 import org.w3c.dom.Attr;
@@ -30,12 +21,8 @@ import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
-import com.google.common.collect.ImmutableList;
-
 /**
- * Simple parser that transforms an XML document to a set of {@link ConfigLine} objects.
+ * Simple parser that allows to obtain the required data from an XML document.
  * <p>
  * It uses the SPI interface {@link XmlNamespaceInfoProvider} to locate for all namespace info provided and normalize the
  * namespace from the XML document.
@@ -44,65 +31,37 @@ import com.google.common.collect.ImmutableList;
  */
 public final class XmlApplicationParser {
 
-  public static final String DECLARED_PREFIX = "DECLARED_PREFIX";
-  public static final String XML_NODE = "XML_NODE";
-  public static final String LINE_NUMBER = "LINE_NUMBER";
-  public static final String CONFIG_FILE_NAME = "CONFIG_FILE_NAME";
-  public static final String IS_CDATA = "IS_CDATA";
+  public static final String DECLARED_PREFIX = org.mule.runtime.dsl.api.xml.parser.XmlApplicationParser.DECLARED_PREFIX;
+  public static final String XML_NODE = org.mule.runtime.dsl.api.xml.parser.XmlApplicationParser.XML_NODE;
+  public static final String LINE_NUMBER = org.mule.runtime.dsl.api.xml.parser.XmlApplicationParser.LINE_NUMBER;
+  public static final String CONFIG_FILE_NAME = org.mule.runtime.dsl.api.xml.parser.XmlApplicationParser.CONFIG_FILE_NAME;
+  public static final String IS_CDATA = org.mule.runtime.dsl.api.xml.parser.XmlApplicationParser.IS_CDATA;
 
-  private static final String COLON = ":";
-  private static final Map<String, String> predefinedNamespace = new HashMap<>();
-  private static final String UNDEFINED_NAMESPACE = "undefined";
-  private final List<XmlNamespaceInfoProvider> namespaceInfoProviders;
-  private final Cache<String, String> namespaceCache;
-
-  static {
-    predefinedNamespace.put(DOMAIN_NAMESPACE, DOMAIN_PREFIX);
-    predefinedNamespace.put(EE_DOMAIN_NAMESPACE, EE_DOMAIN_PREFIX);
-  }
+  private final org.mule.runtime.dsl.api.xml.parser.XmlApplicationParser parser;
 
   public XmlApplicationParser(List<XmlNamespaceInfoProvider> namespaceInfoProviders) {
-    this.namespaceInfoProviders = ImmutableList.<XmlNamespaceInfoProvider>builder().addAll(namespaceInfoProviders).build();
-    this.namespaceCache = CacheBuilder.newBuilder().build();
-  }
-
-  private String loadNamespaceFromProviders(String namespaceUri) {
-    if (predefinedNamespace.containsKey(namespaceUri)) {
-      return predefinedNamespace.get(namespaceUri);
-    }
-    for (XmlNamespaceInfoProvider namespaceInfoProvider : namespaceInfoProviders) {
-      Optional<XmlNamespaceInfo> matchingXmlNamespaceInfo = namespaceInfoProvider.getXmlNamespacesInfo().stream()
-          .filter(xmlNamespaceInfo -> namespaceUri.equals(xmlNamespaceInfo.getNamespaceUriPrefix())).findFirst();
-      if (matchingXmlNamespaceInfo.isPresent()) {
-        return matchingXmlNamespaceInfo.get().getNamespace();
-      }
-    }
-    // TODO MULE-9638 for now since just return a fake value since guava cache does not support null values. When done right throw
-    // a configuration exception with a meaningful message if there's no info provider defined
-    return UNDEFINED_NAMESPACE;
+    parser = new org.mule.runtime.dsl.api.xml.parser.XmlApplicationParser(namespaceInfoProviders);
   }
 
   public String getNormalizedNamespace(String namespaceUri, String namespacePrefix) {
-    try {
-      return namespaceCache.get(namespaceUri, () -> {
-        String namespace = loadNamespaceFromProviders(namespaceUri);
-        if (namespace == null) {
-          namespace = namespacePrefix;
-        }
-        return namespace;
-      });
-    } catch (Exception e) {
-      throw new MuleRuntimeException(e);
-    }
+    return parser.getNormalizedNamespace(namespaceUri, namespacePrefix);
   }
 
+  /**
+   * @deprecated From 4.4 onwards, use the {@code mule-artifact-ast-xml-parser} module.
+   */
+  @Deprecated
   public Optional<ConfigLine> parse(Element configElement) {
     return configLineFromElement(configElement);
   }
 
+  /**
+   * @deprecated From 4.4 onwards, use the {@code mule-artifact-ast-xml-parser} module.
+   */
+  @Deprecated
   private Optional<ConfigLine> configLineFromElement(Node node) {
     if (!isValidType(node)) {
-      return Optional.empty();
+      return empty();
     }
 
     String identifier = parseIdentifier(node);
@@ -149,40 +108,24 @@ public final class XmlApplicationParser {
     return Optional.of(builder.build());
   }
 
-  private String parseNamespace(Node node) {
-    String namespace = CORE_PREFIX;
-    if (node.getNodeType() != Node.CDATA_SECTION_NODE) {
-      namespace = getNormalizedNamespace(node.getNamespaceURI(), node.getPrefix());
-      if (namespace.equals(UNDEFINED_NAMESPACE)) {
-        namespace = node.getPrefix();
-      }
-    }
-    return namespace;
+  public String parseNamespace(Node node) {
+    return parser.parseNamespace(node);
   }
 
-  private String parseNamespaceUri(Node node) {
-    String namespace = CORE_NAMESPACE;
-    if (node.getNodeType() != Node.CDATA_SECTION_NODE) {
-      namespace = node.getNamespaceURI();
-    }
-    return namespace;
+  public String parseNamespaceUri(Node node) {
+    return parser.parseNamespaceUri(node);
   }
 
-  private String parseIdentifier(Node node) {
-    String identifier = node.getNodeName();
-    String[] nameParts = identifier.split(COLON);
-    if (nameParts.length > 1) {
-      identifier = nameParts[1];
-    }
-    return identifier;
+  public String parseIdentifier(Node node) {
+    return parser.parseIdentifier(node);
   }
 
   private boolean isValidType(Node node) {
-    return node.getNodeType() != Node.TEXT_NODE && node.getNodeType() != Node.COMMENT_NODE;
+    return parser.isValidType(node);
   }
 
-  private boolean isTextContent(Node node) {
-    return node.getNodeType() == Node.TEXT_NODE || node.getNodeType() == Node.CDATA_SECTION_NODE;
+  public boolean isTextContent(Node node) {
+    return org.mule.runtime.dsl.api.xml.parser.XmlApplicationParser.isTextContent(node);
   }
 
 }
