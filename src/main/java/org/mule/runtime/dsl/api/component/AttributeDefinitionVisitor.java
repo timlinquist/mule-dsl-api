@@ -14,8 +14,7 @@ import java.util.Optional;
 /**
  * An {code AttributeDefinitionVisitor} allows to access an {@link AttributeDefinition} configuration.
  * <p>
- * Depending on the {@link AttributeDefinition} configuration a method and only one method
- * of this contract will be invoked.
+ * Depending on the {@link AttributeDefinition} configuration a method and only one method of this contract will be invoked.
  *
  * @since 4.0
  */
@@ -37,8 +36,8 @@ public interface AttributeDefinitionVisitor {
   void onReferenceSimpleParameter(String reference);
 
   /**
-   * Called when the attribute must reference another object defined in the configuration,
-   * but the value injected in the attribute holder is the reference as String.
+   * Called when the attribute must reference another object defined in the configuration, but the value injected in the attribute
+   * holder is the reference as String.
    *
    * @param softReference the identifier of an object declared in the configuration.
    */
@@ -63,9 +62,9 @@ public interface AttributeDefinitionVisitor {
    * Called when the attribute is configured from a simple configuration attribute.
    *
    * @param parameterName configuration parameter name.
-   * @param defaultValue default value for the configuration parameter if it has not value.
+   * @param defaultValue  default value for the configuration parameter if it has not value.
    * @param typeConverter a value converter to convert from the value provided by the config to the value required of the
-   *        attribute.
+   *                      attribute.
    */
   void onConfigurationParameter(String parameterName, Object defaultValue, Optional<TypeConverter> typeConverter);
 
@@ -74,9 +73,9 @@ public interface AttributeDefinitionVisitor {
    * in the configuration.
    *
    * @param parameterName configuration parameter name.
-   * @param defaultValue default value for the configuration parameter if it has not value.
+   * @param defaultValue  default value for the configuration parameter if it has not value.
    * @param typeConverter a value converter to convert from the value provided by the config to the value required of the
-   *        attribute.
+   *                      attribute.
    */
   void onReferenceConfigurationParameter(String parameterName, Object defaultValue, Optional<TypeConverter> typeConverter);
 
@@ -93,7 +92,7 @@ public interface AttributeDefinitionVisitor {
   /**
    * Called when the attribute is configured from a list of object with a certain type.
    *
-   * @param type type of the list values to be set in the attribute.
+   * @param type                      type of the list values to be set in the attribute.
    * @param wrapperIdentifierOptional the identifier of the wrapper element that holds the list of components
    */
   void onComplexChildCollection(Class<?> type, Optional<String> wrapperIdentifierOptional);
@@ -101,8 +100,8 @@ public interface AttributeDefinitionVisitor {
   /**
    * Called when the attribute is configured from a map of objects with a certain type.
    *
-   * @param keyType type of the map key to be set in the attribute.
-   * @param valueType type of the map value to be set in the attribute.
+   * @param keyType           type of the map key to be set in the attribute.
+   * @param valueType         type of the map value to be set in the attribute.
    * @param wrapperIdentifier the identifier of the wrapper element that holds the list of components
    */
   void onComplexChildMap(Class<?> keyType, Class<?> valueType, String wrapperIdentifier);
@@ -110,7 +109,7 @@ public interface AttributeDefinitionVisitor {
   /**
    * Called when the attribute is configured from an object with a certain type.
    * 
-   * @param type type of the attribute value.
+   * @param type              type of the attribute value.
    * @param wrapperIdentifier the identifier of the component
    * @param childIdentifier
    */

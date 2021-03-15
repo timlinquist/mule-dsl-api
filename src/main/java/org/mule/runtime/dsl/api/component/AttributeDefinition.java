@@ -16,8 +16,7 @@ import java.util.Optional;
  * <p/>
  * An attribute may be configured to be set by using a constructor or a setter.
  * <p/>
- * The {@link AttributeDefinition.Builder} allows to create an {@code AttributeDefinition}
- * from many different sources.
+ * The {@link AttributeDefinition.Builder} allows to create an {@code AttributeDefinition} from many different sources.
  *
  * @since 4.0
  */
@@ -104,7 +103,7 @@ public class AttributeDefinition {
 
     /**
      * @param configParameterName name of the configuration parameter from which this attribute value will be extracted.
-     * @param typeConverter converter from the configuration value to a custom type.
+     * @param typeConverter       converter from the configuration value to a custom type.
      * @return the builder
      */
     public static Builder fromSimpleParameter(String configParameterName, TypeConverter typeConverter) {
@@ -116,7 +115,7 @@ public class AttributeDefinition {
 
     /**
      * @param configParameterName name of the configuration parameter from which this attribute value will be extracted.
-     * @param typeConverter converter from the configuration value to a custom type.
+     * @param typeConverter       converter from the configuration value to a custom type.
      * @return the builder
      */
     public static Builder fromSimpleReferenceParameter(String configParameterName, TypeConverter typeConverter) {
@@ -279,7 +278,7 @@ public class AttributeDefinition {
     /**
      * Used when an attribute must be set with a map of objects created from the user configuration.
      *
-     * @param keyType the map key type.
+     * @param keyType   the map key type.
      * @param valueType the map value type.
      * @return the builder
      */

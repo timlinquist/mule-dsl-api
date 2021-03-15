@@ -9,8 +9,7 @@ package org.mule.runtime.dsl.api.component;
 import org.mule.api.annotation.NoImplement;
 
 /**
- * Visitor that will be invoked based on a
- * {@link ComponentBuildingDefinition#getTypeDefinition()} configuration.
+ * Visitor that will be invoked based on a {@link ComponentBuildingDefinition#getTypeDefinition()} configuration.
  *
  * @since 4.0
  */
@@ -28,7 +27,7 @@ public interface TypeDefinitionVisitor {
    * Invoked when the {@link TypeDefinition} it's defined from a configuration attribute of the component
    *
    * @param attributeName the name of the configuration attribute holding the type definition. Most likely a fully qualified java
-   *        class name.
+   *                      class name.
    * @param enforcedClass the name of the class from which the one defined in the attribute must be an instance of.
    */
   void onConfigurationAttribute(String attributeName, Class<?> enforcedClass);
