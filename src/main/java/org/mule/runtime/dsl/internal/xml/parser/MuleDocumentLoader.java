@@ -11,10 +11,10 @@ import static java.lang.Thread.currentThread;
 import static org.apache.commons.lang3.StringUtils.isEmpty;
 import static org.mule.apache.xerces.impl.xs.SchemaValidatorHelper.XMLGRAMMAR_POOL;
 import static org.mule.runtime.dsl.internal.xml.parser.XmlMetadataAnnotations.METADATA_ANNOTATIONS_KEY;
-import static org.mule.runtime.internal.util.xmlsecurity.DefaultXMLSecureFactories.DOCUMENT_BUILDER_FACTORY;
 
 import org.mule.apache.xerces.xni.grammars.XMLGrammarPool;
 import org.mule.runtime.dsl.internal.SourcePosition;
+import org.mule.runtime.dsl.internal.xml.parser.XmlMetadataAnnotations.TagBoundaries;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -22,6 +22,7 @@ import java.io.InputStream;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.function.Supplier;
 
 import javax.xml.parsers.DocumentBuilder;
@@ -171,12 +172,18 @@ final public class MuleDocumentLoader {
    */
   public final static class XmlMetadataAnnotator extends DefaultHandler {
 
+    private static final int OPENING_TRACKING_POINT_OFFSET = "<".length();
+    private static final int CLOSING_TRACKING_POINT_OFFSET = "</".length();
+
     private Locator locator;
     private DomWalkerElement walker;
     private final XmlMetadataAnnotationsFactory metadataFactory;
     private final Deque<XmlMetadataAnnotations> annotationsStack = new ArrayDeque<>();
     private SourcePosition trackingPoint = new SourcePosition();
     private boolean writingBody = false;
+
+    // we use this flag to know if our trackingPoint is currently pointing past the start of markup characters (< or </)
+    private boolean startOfMarkupConsumed = false;
 
     private XmlMetadataAnnotator(Document doc, XmlMetadataAnnotationsFactory metadataFactory) {
       this.walker = new DomWalkerElement(doc.getDocumentElement());
@@ -195,9 +202,12 @@ final public class MuleDocumentLoader {
       walker = walker.walkIn();
 
       XmlMetadataAnnotations metadataBuilder = metadataFactory.create(locator);
-      metadataBuilder.setLineNumber(locator.getLineNumber());
-      metadataBuilder.setColumnNumber(trackingPoint.getColumn());
-      LinkedHashMap<String, String> attsMap = new LinkedHashMap<>();
+      int trackingPointOffset = getTrackingPointOffsetForStartElement();
+      metadataBuilder.getOpeningTagBoundaries().setStartLineNumber(trackingPoint.getLine());
+      metadataBuilder.getOpeningTagBoundaries().setStartColumnNumber(trackingPoint.getColumn() - trackingPointOffset);
+      metadataBuilder.getOpeningTagBoundaries().setEndLineNumber(locator.getLineNumber());
+      metadataBuilder.getOpeningTagBoundaries().setEndColumnNumber(locator.getColumnNumber());
+      Map<String, String> attsMap = new LinkedHashMap<>();
       for (int i = 0; i < atts.getLength(); ++i) {
         attsMap.put(atts.getQName(i), atts.getValue(i));
       }
@@ -207,8 +217,14 @@ final public class MuleDocumentLoader {
 
     @Override
     public void characters(char[] ch, int start, int length) throws SAXException {
+      // This logic depends on implementation details of the SAX parser.
+      // We know the parser will stop processing characters at line breaks and at start of markup characters according
+      // to XMLChar#isContent. However, the start of markup characters might not have always been consumed.
+      // If we got a fresh temporary buffer here (start == 0) it means they were not consumed.
+      startOfMarkupConsumed = start != 0;
+
       // update the starting point
-      this.updateTrackingPoint(start > 0);
+      this.updateTrackingPoint();
 
       final String body = new String(ch, start, length).trim();
 
@@ -226,7 +242,7 @@ final public class MuleDocumentLoader {
 
     @Override
     public void ignorableWhitespace(char[] ch, int start, int length) throws SAXException {
-      this.updateTrackingPoint(false);// update the starting point
+      this.updateTrackingPoint();// update the starting point
     }
 
     @Override
@@ -237,6 +253,11 @@ final public class MuleDocumentLoader {
       }
       writingBody = false;
       XmlMetadataAnnotations metadataAnnotations = annotationsStack.pop();
+      int trackingPointOffset = getTrackingPointOffsetForEndElement(metadataAnnotations);
+      metadataAnnotations.getClosingTagBoundaries().setStartLineNumber(trackingPoint.getLine());
+      metadataAnnotations.getClosingTagBoundaries().setStartColumnNumber(trackingPoint.getColumn() - trackingPointOffset);
+      metadataAnnotations.getClosingTagBoundaries().setEndLineNumber(locator.getLineNumber());
+      metadataAnnotations.getClosingTagBoundaries().setEndColumnNumber(locator.getColumnNumber());
       metadataAnnotations.appendElementEnd(qName);
 
       if (!annotationsStack.isEmpty()) {
@@ -250,14 +271,37 @@ final public class MuleDocumentLoader {
       walker = walker.walkOut();
 
       // update the starting point for the next tag
-      this.updateTrackingPoint(false);
+      this.updateTrackingPoint();
     }
 
-    private void updateTrackingPoint(boolean columnOff) {
-      SourcePosition item = new SourcePosition(locator.getLineNumber(), locator.getColumnNumber() - (columnOff ? 1 : 0));
+    private void updateTrackingPoint() {
+      SourcePosition item = new SourcePosition(locator.getLineNumber(), locator.getColumnNumber());
       if (this.trackingPoint.compareTo(item) < 0) {
         this.trackingPoint = item;
       }
+    }
+
+    private int getTrackingPointOffsetForStartElement() {
+      // if the start of markup characters have not been consumed, we don't need to apply any offset
+      return startOfMarkupConsumed ? OPENING_TRACKING_POINT_OFFSET : 0;
+    }
+
+    private int getTrackingPointOffsetForEndElement(XmlMetadataAnnotations metadataAnnotations) {
+      // if the start of markup characters have not been consumed, we don't need to apply any offset
+      if (!startOfMarkupConsumed) {
+        return 0;
+      }
+
+      // checks if the current tracking point is still at the same place of the opening tag starting point
+      // if so, it means the element was written as a self-closing tag (e.g.: <element />), which means we should use
+      // the same offset as for an opening.
+      TagBoundaries openingTagBoundaries = metadataAnnotations.getOpeningTagBoundaries();
+      if (openingTagBoundaries.getStartLineNumber() == trackingPoint.getLine() &&
+          openingTagBoundaries.getStartColumnNumber() == trackingPoint.getColumn() - OPENING_TRACKING_POINT_OFFSET) {
+        return OPENING_TRACKING_POINT_OFFSET;
+      }
+
+      return CLOSING_TRACKING_POINT_OFFSET;
     }
   }
 

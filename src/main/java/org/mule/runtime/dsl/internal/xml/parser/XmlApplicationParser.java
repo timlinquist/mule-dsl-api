@@ -8,6 +8,7 @@
 package org.mule.runtime.dsl.internal.xml.parser;
 
 import static java.util.Optional.empty;
+import static org.mule.runtime.dsl.api.xml.parser.XmlApplicationParser.IS_CDATA;
 
 import org.mule.runtime.dsl.api.xml.XmlNamespaceInfoProvider;
 import org.mule.runtime.dsl.api.xml.parser.ConfigLine;
@@ -31,20 +32,10 @@ import org.w3c.dom.NodeList;
  */
 public final class XmlApplicationParser {
 
-  public static final String DECLARED_PREFIX = org.mule.runtime.dsl.api.xml.parser.XmlApplicationParser.DECLARED_PREFIX;
-  public static final String XML_NODE = org.mule.runtime.dsl.api.xml.parser.XmlApplicationParser.XML_NODE;
-  public static final String LINE_NUMBER = org.mule.runtime.dsl.api.xml.parser.XmlApplicationParser.LINE_NUMBER;
-  public static final String CONFIG_FILE_NAME = org.mule.runtime.dsl.api.xml.parser.XmlApplicationParser.CONFIG_FILE_NAME;
-  public static final String IS_CDATA = org.mule.runtime.dsl.api.xml.parser.XmlApplicationParser.IS_CDATA;
-
   private final org.mule.runtime.dsl.api.xml.parser.XmlApplicationParser parser;
 
   public XmlApplicationParser(List<XmlNamespaceInfoProvider> namespaceInfoProviders) {
     parser = new org.mule.runtime.dsl.api.xml.parser.XmlApplicationParser(namespaceInfoProviders);
-  }
-
-  public String getNormalizedNamespace(String namespaceUri, String namespacePrefix) {
-    return parser.getNormalizedNamespace(namespaceUri, namespacePrefix);
   }
 
   /**
@@ -74,9 +65,9 @@ public final class XmlApplicationParser {
         .setNamespaceUri(namespaceUri);
 
     XmlMetadataAnnotations userData = (XmlMetadataAnnotations) node.getUserData(XmlMetadataAnnotations.METADATA_ANNOTATIONS_KEY);
-    int lineNumber = userData.getLineNumber();
-    builder.setLineNumber(lineNumber).setStartColumn(userData.getColumnNumber());
-    builder.setSourceCode(userData.getElementString());
+    builder.setLineNumber(userData.getOpeningTagBoundaries().getStartLineNumber())
+        .setStartColumn(userData.getOpeningTagBoundaries().getStartColumnNumber())
+        .setSourceCode(userData.getElementString());
 
     XmlCustomAttributeHandler.to(builder).addCustomAttributes(node);
 

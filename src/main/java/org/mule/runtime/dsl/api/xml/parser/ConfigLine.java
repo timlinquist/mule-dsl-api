@@ -110,10 +110,16 @@ public final class ConfigLine {
     return textContent;
   }
 
+  /**
+   * @return the first line number in which the config line was defined in the configuration file.
+   */
   public int getLineNumber() {
     return lineNumber;
   }
 
+  /**
+   * @return the start column in which the config line was defined in the configuration file.
+   */
   public int getStartColumn() {
     return startColumn;
   }
