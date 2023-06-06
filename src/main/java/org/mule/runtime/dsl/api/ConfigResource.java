@@ -37,11 +37,12 @@ public final class ConfigResource {
   static {
     String classPath = getProperty("java.class.path");
     String modulePath = getProperty("jdk.module.path");
+    String pathSeparator = getProperty("path.separator");
 
     CLASS_PATH_ENTRIES = (modulePath != null
-        ? concat(Stream.of(classPath.split(":")),
-                 Stream.of(modulePath.split(":")))
-        : Stream.of(classPath.split(":")))
+        ? concat(Stream.of(classPath.split(pathSeparator)),
+                 Stream.of(modulePath.split(pathSeparator)))
+        : Stream.of(classPath.split(pathSeparator)))
             .filter(StringUtils::isNotBlank)
             .collect(toList());
   }
