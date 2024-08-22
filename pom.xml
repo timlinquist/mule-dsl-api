@@ -114,7 +114,7 @@
         <javaVersion>1.8</javaVersion>
         <javaReleaseVersion>8</javaReleaseVersion>
 
-        <muleBomVersion>4.9.0-SNAPSHOT</muleBomVersion>
+        <muleBomVersion>4.9.0-20240821</muleBomVersion>
 
         <javax.jaxb-api.version>2.3.0</javax.jaxb-api.version>
 
