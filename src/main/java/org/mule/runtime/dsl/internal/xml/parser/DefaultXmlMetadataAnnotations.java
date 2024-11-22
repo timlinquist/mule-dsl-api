@@ -21,11 +21,6 @@ import java.util.regex.Pattern;
  */
 public class DefaultXmlMetadataAnnotations implements XmlMetadataAnnotations {
 
-  /**
-   * compact whitespaces and line breaks
-   */
-  private static final Pattern COMPACT_PATTERN = compile(">\\s+<+");
-
   private static final Pattern URL_PATTERN = compile("url=\"[a-z]*://([^@]*)@");
   private static final Pattern ADDRESS_PATTERN = compile("address=\"[a-z]*://([^@]*)@");
   private static final Pattern PASSWORD_PATTERN = compile("password=\"([^\"|\n]*)\"");
@@ -45,10 +40,22 @@ public class DefaultXmlMetadataAnnotations implements XmlMetadataAnnotations {
    */
   @Override
   public void appendElementStart(String qName, Map<String, String> atts) {
-    xmlContent.append("<" + qName);
+    xmlContent.append("<")
+        .append(qName);
     for (Entry<String, String> entry : atts.entrySet()) {
-      xmlContent.append(maskPasswords(" " + entry.getKey() + "=\"" + entry.getValue() + "\""));
+      if (entry.getKey().equals("url")
+          || entry.getKey().equals("address")
+          || entry.getKey().equals("password")) {
+        xmlContent.append(maskPasswords(" " + entry.getKey() + "=\"" + entry.getValue() + "\""));
+      } else {
+        xmlContent.append(" ")
+            .append(entry.getKey())
+            .append("=\"")
+            .append(entry.getValue())
+            .append("\"");
+      }
     }
+
     xmlContent.append(">");
   }
 
@@ -59,7 +66,18 @@ public class DefaultXmlMetadataAnnotations implements XmlMetadataAnnotations {
    */
   @Override
   public void appendElementBody(String elementBody) {
-    xmlContent.append(elementBody);
+    final String trimmedBody = elementBody.trim();
+    if (trimmedBody.startsWith("<") && trimmedBody.endsWith(">")) {
+      if (xmlContent.charAt(xmlContent.length() - 1) == '>') {
+        xmlContent.append(lineSeparator());
+      }
+
+      xmlContent.append(trimmedBody)
+          .append(lineSeparator());
+    } else {
+      xmlContent.append(trimmedBody);
+    }
+
   }
 
   /**
@@ -69,7 +87,9 @@ public class DefaultXmlMetadataAnnotations implements XmlMetadataAnnotations {
    */
   @Override
   public void appendElementEnd(String qName) {
-    xmlContent.append("</" + qName + ">");
+    xmlContent.append("</")
+        .append(qName)
+        .append(">");
   }
 
   /**
@@ -80,7 +100,7 @@ public class DefaultXmlMetadataAnnotations implements XmlMetadataAnnotations {
    */
   @Override
   public String getElementString() {
-    return COMPACT_PATTERN.matcher(xmlContent.toString().trim()).replaceAll(">" + lineSeparator() + "<");
+    return xmlContent.toString();
   }
 
   /**
