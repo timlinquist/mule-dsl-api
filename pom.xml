@@ -276,7 +276,7 @@
             <plugin>
                 <groupId>org.mule.tools.maven</groupId>
                 <artifactId>mule-module-maven-plugin</artifactId>
-                <version>${project.version}</version>
+                <version>${muleModuleMavenPluginVersion}</version>
                 <executions>
                     <execution>
                         <id>analyze</id>
