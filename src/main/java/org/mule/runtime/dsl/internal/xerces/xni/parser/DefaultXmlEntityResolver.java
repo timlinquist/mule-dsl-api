@@ -8,8 +8,9 @@ package org.mule.runtime.dsl.internal.xerces.xni.parser;
 
 import static org.mule.runtime.api.util.IOUtils.getInputStreamWithCacheControl;
 import static org.mule.runtime.api.util.classloader.MuleImplementationLoaderUtils.getMuleImplementationsLoader;
-import static org.mule.runtime.dsl.internal.util.SchemaMappingsUtils.getMuleSchemasMappings;
+import static org.mule.runtime.dsl.internal.util.SchemaMappingsUtils.getFor;
 import static org.mule.runtime.dsl.internal.util.SchemaMappingsUtils.resolveSystemId;
+
 import static org.slf4j.LoggerFactory.getLogger;
 
 import org.mule.apache.xerces.util.XMLResourceIdentifierImpl;
@@ -17,12 +18,13 @@ import org.mule.apache.xerces.xni.XMLResourceIdentifier;
 import org.mule.apache.xerces.xni.XNIException;
 import org.mule.apache.xerces.xni.parser.XMLEntityResolver;
 import org.mule.apache.xerces.xni.parser.XMLInputSource;
-import org.slf4j.Logger;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.util.Map;
+
+import org.slf4j.Logger;
 
 /**
  * Custom {@link XMLEntityResolver} that resolve entities over mule schemas.
@@ -33,10 +35,12 @@ public class DefaultXmlEntityResolver implements XMLEntityResolver {
 
   private static final Logger LOGGER = getLogger(DefaultXmlEntityResolver.class);
 
+  private final ClassLoader muleImplementationsLoader;
   private final Map<String, String> schemas;
 
   public DefaultXmlEntityResolver() {
-    this.schemas = getMuleSchemasMappings();
+    this.muleImplementationsLoader = getMuleImplementationsLoader();
+    this.schemas = getFor(muleImplementationsLoader).getMuleSchemasMappings();
   }
 
   @Override
@@ -52,7 +56,7 @@ public class DefaultXmlEntityResolver implements XMLEntityResolver {
   private XMLInputSource resolveEntity(Map<String, String> schemas, String publicId, String systemId) {
     String resourceLocation = schemas.get(systemId);
     if (resourceLocation != null) {
-      URL resource = getMuleImplementationsLoader().getResource(resourceLocation);
+      URL resource = muleImplementationsLoader.getResource(resourceLocation);
       if (resource == null) {
         LOGGER.debug("Couldn't find schema [" + systemId + "]: " + resourceLocation);
       } else {
